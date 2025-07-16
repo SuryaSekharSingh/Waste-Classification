@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waste Classifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            text-align: center;
+        }
+        .upload-area {
+            border: 2px dashed #2e8b57;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        #preview {
+            max-width: 100%;
+            margin-top: 20px;
+            display: none;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+            display: none;
+        }
+        button {
+            background: #2e8b57;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #3aa76d;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>♻️ Waste Classification System</h1>
+        <p>Upload an image to classify waste material</p>
+        
+        <form id="uploadForm">
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" name="file" accept="image/*" style="display: none;">
+                <p>Click to upload image (JPG, PNG)</p>
+            </div>
+            <img id="preview" alt="Preview">
+            <div class="loading" id="loading">Classifying...</div>
+            <button type="submit" id="submitBtn" disabled>Classify Waste</button>
+        </form>
+        
+        <div id="result">
+            <h2>Classification: <span id="wasteType"></span></h2>
+            <p>Confidence: <span id="wasteAccuracy"></span></p>
+            <div id="recyclingInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadArea').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.getElementById('preview');
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('fileInput');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            if (!fileInput.files.length) return;
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            fetch('/classify', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                
+                document.getElementById('wasteType').textContent = data.waste_type;
+                document.getElementById('wasteAccuracy').textContent = data.accuracy;
+                document.getElementById('recyclingInfo').innerHTML = data.recycling_info;
+                result.style.display = 'block';
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                alert('Classification failed: ' + error);
+            });
+        });
+    </script>
+</body>
+</html>
